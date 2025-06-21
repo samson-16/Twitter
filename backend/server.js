@@ -1,5 +1,6 @@
 import express from 'express';
 import authRoutes from './routes/auth.routes.js';
+import userRoutes from './routes/user.routes.js';
 import dotenv from 'dotenv';
 import connectDB from './db/connect.js';
 import cookieParser from 'cookie-parser';
@@ -13,6 +14,7 @@ app.use(cookieParser());
 
 //routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 
 app.listen(PORT, () => {
