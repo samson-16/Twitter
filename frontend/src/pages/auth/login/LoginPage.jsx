@@ -5,6 +5,8 @@ import XSvg from "../../../components/svgs/X";
 
 import { MdOutlineMail } from "react-icons/md";
 import { MdPassword } from "react-icons/md";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const LoginPage = () => {
 	const [formData, setFormData] = useState({
@@ -12,8 +14,49 @@ const LoginPage = () => {
 		password: "",
 	});
 
+	const queryClient = useQueryClient();
+   const {mutate, isError, isPending, error} = useMutation({
+	  mutationFn: async ({ username, password }) => {
+			try {
+				const response = await fetch("/api/auth/login", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ username, password }),
+				});
+
+				const data = await response.json();
+				if (!response.ok) {
+					throw new Error(`${data.message || "Failed to log in"}`);
+				}
+				if (data.error) {
+					throw new Error(data.error);
+				}
+				return data;
+			} catch (error) {
+				
+				throw new Error(error.message || "An error occurred while logging in");
+			}
+		},
+		onSuccess: (data) => {
+			// console.log("Login successful:", data);
+			toast.success("Login successful!");
+			setFormData({ username: "", password: "" });
+			queryClient.setQueryData(["authUser"], data);
+		},
+		onError: (error) => {
+			console.error("Login failed:", error);
+			toast.error(error.message);
+
+			// You can also show a toast or notification here
+		}
+	});
+	
 	const handleSubmit = (e) => {
 		e.preventDefault();
+		// Call the mutation function to log in
+		mutate(formData);
 		console.log(formData);
 	};
 
@@ -21,7 +64,7 @@ const LoginPage = () => {
 		setFormData({ ...formData, [e.target.name]: e.target.value });
 	};
 
-	const isError = false;
+	// const isError = false;
 
 	return (
 		<div className='max-w-screen-xl mx-auto flex h-screen'>
@@ -55,8 +98,11 @@ const LoginPage = () => {
 							value={formData.password}
 						/>
 					</label>
-					<button className='btn rounded-full btn-primary text-white'>Login</button>
-					{isError && <p className='text-red-500'>Something went wrong</p>}
+					<button className='btn rounded-full btn-primary text-white'>{isPending ? "...loading" : "login"}</button>
+					{isError && <p className='text-red-500'>{error.message || "Login failed. Please try again."}</p>}
+					
+
+					
 				</form>
 				<div className='flex flex-col gap-2 mt-4'>
 					<p className='text-white text-lg'>{"Don't"} have an account?</p>
