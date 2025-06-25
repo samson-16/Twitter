@@ -39,9 +39,9 @@ function App() {
     });
 
     if (isLoading) {
-        <div className="flex justify-center items-center h-screen">
+        return (<div className="flex justify-center items-center h-screen">
           <LoadingSpinner size='lg'/>
-        </div>;
+        </div>)
     }
 
   return (
