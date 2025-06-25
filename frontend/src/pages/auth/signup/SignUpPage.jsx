@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 import XSvg from "../../../components/svgs/X";
@@ -11,6 +11,7 @@ import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 const SignUpPage = () => {
+	const navigate  = useNavigate();
 	const [formData, setFormData] = useState({
 		email: "",
 		username: "",
@@ -39,8 +40,8 @@ const SignUpPage = () => {
 			}
 			return data;
 				} catch (error) {
-					console.error("Error signing up:", error);
-			toast.error("Error signing up: " + error.message);
+					console.error( error.message);
+					throw new Error(error.message || "Failed to sign up");
 			
 				}
 
@@ -49,6 +50,8 @@ const SignUpPage = () => {
 		}, onSuccess : (data) => {
 			toast.success("Sign up successful! Please check your email to verify your account.");
 			setFormData({ email: "", username: "", fullName: "", password: "" });
+			
+			navigate("/login");
 		}
 			});
 
@@ -56,6 +59,7 @@ const SignUpPage = () => {
 		e.preventDefault();
 		// console.log(formData);
 		mutate(formData)
+
 	};
 
 	const handleInputChange = (e) => {

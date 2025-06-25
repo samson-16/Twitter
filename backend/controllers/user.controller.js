@@ -102,7 +102,7 @@ export const getSuggestedUsers = async (req, res) => {
         suggestedUsers.forEach(user => {user.password = null})
         
 
-        res.status(200).json({ suggestedUsers });
+        res.status(200).json(suggestedUsers );
     } catch (error) {
         console.log("Error in getSuggestedUsers controller", error.message);
         res.status(500).json({ error: "Internal Server Error" });
