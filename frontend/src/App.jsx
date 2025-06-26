@@ -52,7 +52,7 @@ function App() {
       <Route path="/" element={ authUser ? <HomePage/> : <Navigate to="/login"/> } />
       <Route path="/signup" element={ !authUser ? <SignUpPage/> : <Navigate to="/" /> }/>
       <Route path="/login" element={ !authUser ? <LoginPage/> : <Navigate to="/"/> } />
-      <Route path="/notification" element={
+      <Route path="/notifications" element={
         authUser ? <NotificationPage/> : <Navigate to="/login"/> } />
     
       <Route path="/profile/:username" element={ 

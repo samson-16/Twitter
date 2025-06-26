@@ -27,9 +27,7 @@ const LoginPage = () => {
 				});
 
 				const data = await response.json();
-				if (!response.ok) {
-					throw new Error(`${data.message || "Failed to log in"}`);
-				}
+				
 				if (data.error) {
 					throw new Error(data.error);
 				}
