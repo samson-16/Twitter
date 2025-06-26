@@ -7,11 +7,12 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {toast } from "react-hot-toast";
 import LoadingSpinner from "./LoadingSpinner";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import {  useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const Post = ({ post }) => {
 	const [comment, setComment] = useState("");
 	const {data:authUser} = useQuery({queryKey: ["authUser"]})
+	const queryClient = useQueryClient();
 	const {mutate:deletePost, isPending } = useMutation({
 		mutationFn: async () => {
 			try {
@@ -33,15 +34,49 @@ const Post = ({ post }) => {
 		,
 		onSuccess: () => {
 			toast.success("Post deleted successfully");
+			queryClient.invalidateQueries({ queryKey: ["posts"] });
 		},
 			
 
 
 	})
-	const postOwner = post.user;
-	const isLiked = false;
 
-	const isMyPost = authUser?._id === post.user._id;
+	const {mutate:likePost, isPending:isLiking} = useMutation({
+		mutationFn: async () => {
+			try {
+				const res = await fetch(`/api/posts/like/${post._id}`, {
+					method: "POST",
+				});
+				if (!res.ok) {
+					throw new Error("Failed to like post");
+				}
+				const data = await res.json();
+				return data;
+			} catch (error) {
+				throw new Error("Failed to like post");
+			}
+		},
+		onSuccess: (updatedLikes) => {
+			
+			queryClient.setQueryData(["posts"], (oldData) => {
+				return oldData.map((p) => {
+					if (p._id === post._id) {
+						return { ...p, likes: updatedLikes };
+					}
+					return p;
+				});
+
+			});
+		},
+		onError: (error) => {
+			toast.error(error.message || "Failed to like post");
+		},
+	});
+
+	const postOwner = post.user;
+	const isLiked = false
+
+	const isMyPost = authUser._id === post.user._id;
 
 	const formattedDate = "1h";
 
@@ -55,7 +90,11 @@ const Post = ({ post }) => {
 		e.preventDefault();
 	};
 
-	const handleLikePost = () => {};
+	const handleLikePost = () => {
+		if (isLiking) return; // Prevent multiple clicks
+		likePost();
+		
+	};
 
 	return (
 		<>
@@ -164,14 +203,16 @@ const Post = ({ post }) => {
 								<span className='text-sm text-slate-500 group-hover:text-green-500'>0</span>
 							</div>
 							<div className='flex gap-1 items-center group cursor-pointer' onClick={handleLikePost}>
-								{!isLiked && (
+								{isLiking && (
+									<LoadingSpinner size='sm'/> )}
+								{!isLiked && !isLiking && (
 									<FaRegHeart className='w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500' />
 								)}
-								{isLiked && <FaRegHeart className='w-4 h-4 cursor-pointer text-pink-500 ' />}
+								{isLiked && !isLiking && <FaRegHeart className='w-4 h-4 cursor-pointer text-pink-500 ' />}
 
 								<span
-									className={`text-sm text-slate-500 group-hover:text-pink-500 ${
-										isLiked ? "text-pink-500" : ""
+									className={`text-sm  group-hover:text-pink-500 ${
+										isLiked ? "text-pink-500" : "text-slate-500"
 									}`}
 								>
 									{post.likes.length}
