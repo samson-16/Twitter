@@ -13,7 +13,7 @@ router.get('/following', protectedRoute, getFollowingPosts);
 
 router.post('/like/:id', protectedRoute, likeUnlikePost);
 router.get('/user/:username', protectedRoute, getUserPosts);
-router.post('/likes/:id', protectedRoute, getLikedPosts);
+router.get('/likes/:id', protectedRoute, getLikedPosts);
 router.post('/comment/:id', protectedRoute, commentOnPost);
 router.delete('/:id', protectedRoute, deletePost);
 
