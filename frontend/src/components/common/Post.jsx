@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import {toast } from "react-hot-toast";
 import LoadingSpinner from "./LoadingSpinner";
 import {  useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatPostDate } from "../../utils/date";
 
 const Post = ({ post }) => {
 	const [comment, setComment] = useState("");
@@ -73,14 +74,54 @@ const Post = ({ post }) => {
 		},
 	});
 
+	const {mutate:commentOnPost, isPending:isCommenting} = useMutation({
+		mutationFn: async () => {
+			try {
+				const res = await fetch(`/api/posts/comment/${post._id}`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ text: comment }),
+				});
+				if (!res.ok) {
+					throw new Error("Failed to comment on post");
+
+				}
+				const data = await res.json();
+				return data;
+			} catch (error) {
+				throw new Error("Failed to comment on post");
+			}
+		},
+		onSuccess: () => {
+			// queryClient.setQueryData(["posts"], (oldData) => {
+			// 	return oldData.map((p) => {
+
+			// 		if (p._id === post._id) {
+			// 			return { ...p, comments: updatedComments };
+			// 		}
+			// 		return p;
+			// 	});
+			// });
+			queryClient.invalidateQueries({ queryKey: ["posts"] });
+			toast.success("Comment added successfully");
+			setComment(""); // Clear the comment input
+		},
+		onError: (error) => {
+			toast.error(error.message || "Failed to comment on post");
+		},
+	});
+
+
 	const postOwner = post.user;
 	const isLiked = false
 
 	const isMyPost = authUser._id === post.user._id;
 
-	const formattedDate = "1h";
+	const formattedDate =formatPostDate(post.createdAt);;
 
-	const isCommenting = false;
+	// const isCommenting = false;
 
 	const handleDeletePost = () => {
 		deletePost();
@@ -88,6 +129,8 @@ const Post = ({ post }) => {
 
 	const handlePostComment = (e) => {
 		e.preventDefault();
+		if (isCommenting) return; // Prevent multiple clicks
+		commentOnPost();
 	};
 
 	const handleLikePost = () => {
