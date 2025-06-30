@@ -5,26 +5,33 @@ import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
 import EditProfileModal from "./EditProfileModal";
 
+
 import { POSTS } from "../../utils/db/dummy";
 
 import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../utils/date";
+import useFollow from "../../components/hooks/useFollow";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import toast from "react-hot-toast";
+// import { updateProfile } from "../../../../backend/controllers/user.controller";
 
 const ProfilePage = () => {
   const { username } = useParams();
+  const {data: authUser} = useQuery({queryKey: ["authUser"]});
+  const {follow, isPending} =useFollow();
   const [coverImg, setCoverImg] = useState(null);
   const [profileImg, setProfileImg] = useState(null);
   const [feedType, setFeedType] = useState("posts");
 
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
+  const queryClient = useQueryClient();
 
   // const isLoading = false;
-  const isMyProfile = true;
 
   // const user = {
   // 	_id: "1",
@@ -61,10 +68,53 @@ const ProfilePage = () => {
     },
   });
 
+  const {mutate: updateProfile, isPending: isUpdating} = useMutation({
+	mutationFn: async () => {
+	  try {
+		const response = await fetch('/api/users/update', {
+		  method: "post",
+		  headers: {
+			"Content-Type": "application/json",
+		  },
+		  body: JSON.stringify({ coverImg, profileImg }),
+		})
+		const data = await response.json();
+		if (!response.ok) {
+		  throw new Error(data.error || "Failed to update profile");
+		}
+		return data;
+
+	} catch (error){
+		console.error("Error updating user profile:", error);
+		throw new Error(
+		  error.message || "An error occurred while updating user profile"
+		);
+	  }
+	},
+	onsuccess: () => {
+		Promise.all([
+		
+	  queryClient.invalidateQueries(["userProfile"]),
+	  queryClient.invalidateQueries(["authUser"])
+		])
+	  toast.success("Profile updated successfully");
+	  setCoverImg(null);
+	  setProfileImg(null);
+	},
+	onError: (error) => {
+	  console.error("Error updating user profile:", error);
+	  toast.error(error.message || "Failed to update profile");
+	}
+		});
+		
+
+		
+const amIFollowing = authUser?.following?.includes(user?._id);
   useEffect(() => {
 	refetch();
   }, [username, refetch]);
-
+  const isMyProfile = authUser._id === user?._id;
+  
   const memeberSinceDate = formatMemberSinceDate(
 	user?.createdAt || new Date().toISOString()
   );
@@ -154,21 +204,23 @@ const ProfilePage = () => {
                 </div>
               </div>
               <div className="flex justify-end px-4 mt-5">
-                {isMyProfile && <EditProfileModal />}
+                {isMyProfile && <EditProfileModal authUser={authUser}/>}
                 {!isMyProfile && (
                   <button
                     className="btn btn-outline rounded-full btn-sm"
-                    onClick={() => alert("Followed successfully")}
+                    onClick={() => follow(user?._id)}
                   >
-                    Follow
+                    {isPending && <LoadingSpinner/>}
+                    {!isPending && amIFollowing && "Unfollow"}
+                    {!isPending && !amIFollowing && "Follow"}
                   </button>
                 )}
                 {(coverImg || profileImg) && (
                   <button
                     className="btn btn-primary rounded-full btn-sm text-white px-4 ml-2"
-                    onClick={() => alert("Profile updated successfully")}
+                    onClick={() => updateProfile({})}
                   >
-                    Update
+                    {isUpdating ? <LoadingSpinner size="sm" /> : "update"}
                   </button>
                 )}
               </div>
