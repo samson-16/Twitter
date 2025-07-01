@@ -33,7 +33,7 @@ const SignUpPage = () => {
 			
 			const data =response.json();
 			if (!response.ok) {
-				throw new Error(`Error: ${data.message || "Failed to sign up"}`	);
+				throw new Error(`Error: ${data.error || "Failed to sign up"}`	);
 			}
 			if (data.error) {
 				throw new Error(data.error);

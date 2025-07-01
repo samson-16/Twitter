@@ -68,7 +68,7 @@ const ProfilePage = () => {
     },
   });
 
-  const {mutate: updateProfile, isPending: isUpdating} = useMutation({
+  const {mutateAsync: updateProfile, isPending: isUpdating} = useMutation({
 	mutationFn: async () => {
 	  try {
 		const response = await fetch('/api/users/update', {
@@ -91,15 +91,14 @@ const ProfilePage = () => {
 		);
 	  }
 	},
-	onsuccess: () => {
+	onSuccess: () => {
 		Promise.all([
 		
 	  queryClient.invalidateQueries(["userProfile"]),
 	  queryClient.invalidateQueries(["authUser"])
 		])
 	  toast.success("Profile updated successfully");
-	  setCoverImg(null);
-	  setProfileImg(null);
+	
 	},
 	onError: (error) => {
 	  console.error("Error updating user profile:", error);
@@ -218,7 +217,11 @@ const amIFollowing = authUser?.following?.includes(user?._id);
                 {(coverImg || profileImg) && (
                   <button
                     className="btn btn-primary rounded-full btn-sm text-white px-4 ml-2"
-                    onClick={() => updateProfile({})}
+                    onClick={ async()=>
+                     { await updateProfile();
+                      setCoverImg(null);
+                      setProfileImg(null);}
+                    }
                   >
                     {isUpdating ? <LoadingSpinner size="sm" /> : "update"}
                   </button>
